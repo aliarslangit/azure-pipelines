@@ -1,0 +1,52 @@
+
+trigger:
+- main
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  buildConfiguration: 'Release'
+
+steps:
+- task: DotNetCoreCLI@2
+  displayName: Publish
+  inputs:
+    command: publish
+    publishWebProjects: True
+    arguments: '--configuration $(BuildConfiguration) --output $(build.artifactstagingdirectory)'
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    ArtifactName: 'drop'
+    publishLocation: 'container'
+
+- task: DownloadBuildArtifacts@0
+  inputs:
+    buildType: 'current'
+    downloadType: 'single'
+    artifactName: 'drop'
+    downloadPath: '$(System.DefaultWorkingDirectory)'
+- task: Bash@3
+  inputs:
+    targetType: 'inline'
+    script: |
+      # Write your commands here      
+      echo 'Hello world'      
+      cd $(System.DefaultWorkingDirectory)/drop    
+      ls
+      unzip Client.zip
+      ls
+
+- task: AzureStaticWebApp@0
+  displayName: 'Static Web App:'
+  inputs:
+    workingDirectory: '$(System.DefaultWorkingDirectory)/drop/wwwroot/'
+    app_location: /
+    skip_app_build: true
+    skip_api_build: true
+    is_static_export: false
+    verbose: false
+    azure_static_web_apps_api_token: ''
+
